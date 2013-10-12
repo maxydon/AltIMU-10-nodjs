@@ -1,5 +1,6 @@
 I2C = require('i2c')
 sleep = require 'sleep'
+Q = require 'q'
 
 # ============================================================================
 #LPS331 Altimeter
@@ -16,7 +17,7 @@ class LPS331
   LPS331_SA0_AUTO: 2
 
   # Registers/etc.
-  LPS331_REF_P_XL : 0x08
+  LPS331_REF_P_XL :      0x08
   LPS331_REF_P_L:        0x09
   LPS331_REF_P_H:        0x0A
 
@@ -61,7 +62,14 @@ class LPS331
     #reset
     @_send(@LPS331_CTRL_REG1, 0x00)
     #set pressure sensor to high resolution
-    @_send(@LPS331_RES_CONF, 0x7A) #0x7A forbidden in auto mode, use  0x79 instead      
+    @_send(@LPS331_RES_CONF, 0x7A) #0x7A forbidden in auto mode, use  0x79 instead   
+    
+    @enableDefault()   
+    
+    #experimenting
+    @i2c.on 'data', (data)->
+      # result for continuous stream contains data buffer, address, length, timestamp
+      console.log "recieved data", data
   
   _send:(cmd, values)->
     if cmd?
@@ -79,9 +87,26 @@ class LPS331
         if err?
           console.log "Error: in I2C", err
       
-  _read:(cmd, length, callback)->
+  _readOld:(cmd, length, callback)->
+    
     @i2c.readBytes cmd, length, callback
   
+  _read:(cmd, length)->
+    deferred = Q.defer()
+    callback = (err, res)=>
+      if err?
+        deferred.reject( err )
+      else
+        deferred.resolve(res)
+    
+    if cmd?
+      @i2c.readBytes cmd, length, callback
+    else
+      @i2c.readByte callback
+    
+    #return Q.nfcall @i2c.readBytes, cmd, length
+    return deferred.promise
+    
   
   init:(sa0)->
     return
@@ -166,8 +191,8 @@ class LPS331
   readTemperatureTest:(tempType)->
     tempType = tempType or "c"
     tempType = tempType.toLowerCase()
-
-    toto = true
+    
+    toto = false
     if toto
       #Turn on the pressure sensor analog front end in single shot mode
       @_send(@LPS331_CTRL_REG1, 0x84)
@@ -176,8 +201,11 @@ class LPS331
       sleep.usleep(5000)
     else
       @_send(@LPS331_TEMP_OUT_L | (1 << 7))
+
     
-    onResult=(err, res)=>
+    onResult=(res)=>
+      #err,
+      err = null
       if err?
         console.log "error", err
         throw new Error(err)
@@ -203,7 +231,52 @@ class LPS331
     if toto
       @_read(@LPS331_TEMP_OUT_H, 2, onResult)
     else
-      @_read(0x00, 2, onResult)
+      bla1=false
+      bla2=false
+      res1 = null
+      res2 = null
+      
+      onResult1=(err, res)=>
+        if err?
+          console.log "error", err
+          throw new Error(err)
+        
+        console.log "res1", res.toString(16)
+        bla1 = true
+        res1 = res
+        if bla1 and bla2
+          onResult( null, [res1,res2])
+        
+      onResult2=(err, res)=>
+        if err?
+          console.log "error", err
+          throw new Error(err)
+        
+        console.log "res2", res.toString(16)
+        bla2 = true
+        res2 = res
+        if bla1 and bla2
+          onResult( null, [res1,res2])
+      
+      onResult3=(bla)=>
+        console.log "here , oh good",bla
+      
+      onFailed=(bla)=>
+        console.log "here , NOT good",bla
+      
+      onTestMulti=(a,b)=>
+        console.log "pouet",a,b
+      #d = @_read(0x00, 2)
+      #d.then(onResult3)
+      #d.fail(onFailed)
+      #@_read(null, 2, onResult)
+      #@i2c.readBytes(0x2C, 2, onResult)
+      #@i2c.readByte(onResult1)
+      #@i2c.readByte(onResult2)
+      Q.all([@_read(),@_read()]).then(onResult)#.spread(onTestMulti)
+      #@_read().then(onResult3)
+      #@_read().then(onResult3)
+      
 
   readTemperatureRaw:->
     address = @LPS331AP_ADDRESS_SA0_HIGH
