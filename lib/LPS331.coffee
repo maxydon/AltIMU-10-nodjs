@@ -54,22 +54,12 @@ class LPS331
     @debug = debug or false
     @i2c = new I2C(@address, device: @device)
     
-    if (@debug)
-      console.log "Reseting LPS331"
-      
+    @reset()
+    #FIXME: init (autodetect) does NOT work
     #@init( @LPS331_SA0_AUTO )
+    @enableDefault()  
+    @setInterupts()
     
-    #reset
-    @_send(@LPS331_CTRL_REG1, 0x00)
-    #set pressure sensor to high resolution
-    @_send(@LPS331_RES_CONF, 0x79) #0x7A forbidden in auto mode, use  0x79 instead   
-    
-    @enableDefault()   
-    
-    #experimenting
-    @i2c.on 'data', (data)->
-      # result for continuous stream contains data buffer, address, length, timestamp
-      console.log "recieved data", data
   
   _send:(cmd, values)->
     if cmd?
@@ -90,7 +80,7 @@ class LPS331
   _read:(cmd, length)->
     length = length or 1
     if @debug
-      console.log "reading from #{cmd}, length: #{length}"
+      console.log "reading at #{@i2c.address.toString(16)}, from #{cmd}, length: #{length}"
     
     deferred = Q.defer()
     callback = (err, res)=>
@@ -116,9 +106,15 @@ class LPS331
         Q.all(reads).then callback2, errback
     
     return deferred.promise
-    
+
+  reset:->
+    if (@debug)
+      console.log "Reseting LPS331"
+    #reset
+    @_send(@LPS331_CTRL_REG1, 0x00)    
   
   init:(sa0)->
+    @autoDetectAddress().then()
     return
     switch(sa0)
       when @LPS331_SA0_LOW
@@ -130,29 +126,63 @@ class LPS331
       else
         return @autoDetectAddress()
   
-  
   autoDetectAddress:->
-    @address = @LPS331AP_ADDRESS_SA0_LOW
-    @testWhoAmI.then()
     
-    if (testWhoAmI()) then return true
-    @address = @LPS331AP_ADDRESS_SA0_HIGH
-    if (testWhoAmI()) then return true
-    return false
+    validateAdress=(adress)=>
+      if @debug
+        console.log "validating adress: #{adress.toString(16)}"
+      @__orgiAdress = @adress
+      @address = adress
+      @i2c.setAddress( adress )
+      console.log "pouic",@i2c.address.toString(16)
+      check=(flag)=>
+        if @debug 
+          console.log "Adress #{adress.toString(16)} valid: #{flag}"
+        if not flag
+          @address = @__orgiAdress #invalid adress tested, return to original
+          @i2c.setAddress( @__orgiAdress )
+          throw new Error("Invalid adress")
+      
+      @testWhoAmI().then( check )
 
-  testWhoAmI:->
-    checkValue=(val)->
-      return val == 0xBB
-    return @_read(@LPS331_WHO_AM_I).then checkValue
+    validator=()=>
+      #go through available adresses until one is validated
+    
+    return validateAdress(0x9B).fail ()=>
+      validateAdress(@LPS331AP_ADDRESS_SA0_HIGH)
+
+  testWhoAmI:=>
+    checkValue=(val)=>
+      val = val[0] #value is a buffer, get first item
+      console.log "pouet"
+      console.log "val checked:", val.toString(16), "bla",@i2c.address.toString(16)
+      return (val == 0xBB)
+    return Q.when( @_read(@LPS331_WHO_AM_I).then( checkValue ) )
     
   
   #turns on sensor and enables continuous output
   enableDefault:->
     #active mode, 12.5 Hz output data rate
-    @_send(@LPS331_CTRL_REG1, 0xE0)
-    #@_send(@LPS331_CTRL_REG1, 0b11100000)#12.5
+    #@_send(@LPS331_CTRL_REG1, 0xE0)
+    #@_send(@LPS331_CTRL_REG1, 0b11100000)#12.5, same as above
     #@_send(@LPS331_CTRL_REG1, 0b10010000)#1
-    
+    @_send(@LPS331_CTRL_REG1, 0b10010000)#1
+
+  #set pressure sensing resolution (1 to 10)
+  setResolution:(res)->
+    value = 0x70 + res-1
+    if @debug
+      console.log "setting resolution ",value.toString(16)
+    #set pressure sensor to high resolution
+    @_send(@LPS331_RES_CONF, value) #0x7A forbidden in auto mode, use  0x79 instead       
+
+
+  setInterupts:->
+    @_send(@LPS331_CTRL_REG3, 0b10100000)
+    #experimenting
+    @i2c.on 'data', (data)->
+      # result for continuous stream contains data buffer, address, length, timestamp
+      console.log "recieved data", data  
 
   # reads pressure and returns either raw 24-bit sensor output or a pre converted value
   readPressure:(pressType)->
@@ -183,6 +213,7 @@ class LPS331
         when 'h'
           pressure = @rawPressureToInchesHg( rawPressure )
       
+      console.log "initial pressure #{pressure} #{units[pressType]}"
       pressure= parseFloat(pressure.toPrecision(6))
       console.log "pressure #{pressure} #{units[pressType]}"
       

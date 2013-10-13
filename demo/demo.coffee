@@ -4,7 +4,8 @@ LPS331 = require '../lib/LPS331'
 
 prSensor = new LPS331()
 
-
+#set resolution to anything from 1 to 10(highest)
+prSensor.setResolution(9)
 
 measure=->
   prSensor.readTemperature()

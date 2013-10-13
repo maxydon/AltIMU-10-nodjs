@@ -9,6 +9,8 @@ LPS331 = require('../lib/LPS331');
 
 prSensor = new LPS331();
 
+prSensor.setResolution(9);
+
 measure = function() {
   prSensor.readTemperature();
   prSensor.readPressure();
@@ -25,4 +27,4 @@ measurements = 0;
 
 curMeasurements = 0;
 
-timer = setInterval(measure, 3000);
+timer = setInterval(measure, 2000);
