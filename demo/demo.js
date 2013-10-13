@@ -10,7 +10,9 @@ LPS331 = require('../lib/LPS331');
 prSensor = new LPS331();
 
 measure = function() {
-  prSensor.readTemperatureTest();
+  prSensor.readTemperature();
+  prSensor.readPressure();
+  console.log(" ");
   if (measurements > 0) {
     curMeasurements++;
     if (curMeasurements >= measurements) {
@@ -23,4 +25,4 @@ measurements = 0;
 
 curMeasurements = 0;
 
-timer = setInterval(measure, 1000);
+timer = setInterval(measure, 3000);

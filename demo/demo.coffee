@@ -7,8 +7,9 @@ prSensor = new LPS331()
 
 
 measure=->
-  prSensor.readTemperatureTest()
-  #prSensor.readPressureTest()
+  prSensor.readTemperature()
+  prSensor.readPressure()
+  console.log " "
   if measurements > 0 #0: continuous
     curMeasurements++
     if curMeasurements >= measurements
@@ -18,6 +19,6 @@ measure=->
 measurements = 0
 curMeasurements = 0
 
-timer = setInterval measure , 1000
+timer = setInterval measure , 2000
 
 
