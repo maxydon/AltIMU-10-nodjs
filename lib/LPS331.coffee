@@ -58,7 +58,7 @@ class LPS331
     #FIXME: init (autodetect) does NOT work
     #@init( @LPS331_SA0_AUTO )
     @enableDefault()  
-    @setInterupts()
+    #@setInterupts()
     
   
   _send:(cmd, values)->
