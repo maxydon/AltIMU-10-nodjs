@@ -1,6 +1,7 @@
 require('coffee-script')
 LPS331 = require '../lib/LPS331'
 L3GD20 = require '../lib/L3GD20'
+#LSM303 = require '../lib/LSM303'
 
 #debugging attempts for multiple devices
 #I2C = require('i2c')
@@ -8,7 +9,7 @@ L3GD20 = require '../lib/L3GD20'
 
 prSensor = new LPS331()
 compass  = new L3GD20()#problem with multiple I2c devices ! dang ! see here https://github.com/kelly/node-i2c/issues/7
-
+#acceler  = new LSM303()
 
 #set pressure resolution to anything from 1 to 10(highest)
 prSensor.setResolution(9)

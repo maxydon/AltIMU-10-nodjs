@@ -163,10 +163,10 @@ class LPS331
   #turns on sensor and enables continuous output
   enableDefault:->
     #active mode, 12.5 Hz output data rate
-    #@_send(@LPS331_CTRL_REG1, 0xE0)
+    @_send(@LPS331_CTRL_REG1, 0xE0)
     #@_send(@LPS331_CTRL_REG1, 0b11100000)#12.5, same as above
     #@_send(@LPS331_CTRL_REG1, 0b10010000)#1
-    @_send(@LPS331_CTRL_REG1, 0b10010000)#1
+    #@_send(@LPS331_CTRL_REG1, 0b10010000)#1
 
   #set pressure sensing resolution (1 to 10)
   setResolution:(res)->
