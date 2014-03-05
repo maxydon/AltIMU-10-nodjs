@@ -9,7 +9,7 @@ prSensor = new LPS331();
 
 compass = new L3GD20();
 
-prSensor.setResolution(9);
+//prSensor.setResolution(0x10);
 
 measure = function() {
   console.log("---------------*****---------------");
