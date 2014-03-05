@@ -12,10 +12,14 @@ compass = new L3GD20();
 prSensor.setResolution(9);
 
 measure = function() {
+  console.log("---------------*****---------------");
+  console.log("Reading Temperature");
   prSensor.readTemperature();
+  console.log("---------------");
+  console.log("Reading Pressure");
   prSensor.readPressure();
   console.log("---------------");
-  compass.readAllAxes();
+  //compass.readAllAxes();
   console.log(" ");
   if (measurements > 0) {
     curMeasurements++;
