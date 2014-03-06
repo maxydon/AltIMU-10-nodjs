@@ -5,7 +5,7 @@ LPS331 = require('../lib/LPS331');
 
 L3GD20 = require('../lib/L3GD20');
 
-prSensor = new LPS331();
+// prSensor = new LPS331(null,null,true);
 
 compass = new L3GD20();
 
@@ -17,9 +17,9 @@ measure = function() {
   prSensor.readTemperature();
   console.log("---------------");
   console.log("Reading Pressure");
-  prSensor.readPressure();
-  console.log("---------------");
-  //compass.readAllAxes();
+  prSensor.readPressureIfReady();
+  // console.log("-------Reading axes--------");
+  // compass.readAllAxes();
   console.log(" ");
   if (measurements > 0) {
     curMeasurements++;
