@@ -40,7 +40,7 @@ measurements = 0;
 
 curMeasurements = 0;
 
-timer = setInterval(measure, 100);
+timer = setInterval(measure, 900);
 
 
 // wire.scan(function(err, data) {
